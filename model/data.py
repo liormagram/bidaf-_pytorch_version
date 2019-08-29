@@ -82,7 +82,7 @@ class SQuAD():
     def preprocess_file(self, path):
         dump = []
         abnormals = [' ', '\n', '\u3000', '\u202f', '\u2009']
-
+        print(path)
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             data = data['data']
