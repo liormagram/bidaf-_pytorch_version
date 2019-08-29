@@ -128,7 +128,7 @@ class SQuAD():
                                               ('s_idx', s_idx),
                                               ('e_idx', e_idx)]))
 
-        with open(f'{path}l', 'w', encoding='utf-8') as f:
+        with open('{path}l', 'w', encoding='utf-8') as f:
             for line in dump:
                 json.dump(line, f)
                 print('', file=f)
