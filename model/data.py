@@ -20,10 +20,10 @@ class SQuAD():
         dev_examples_path = dataset_path + 'dev_examples.pt'
 
         print("preprocessing data files...")
-        if not os.path.exists(f'{path}/{args.train_file}l'):
-            self.preprocess_file(f'{path}/{args.train_file}')
-        if not os.path.exists(f'{path}/{args.dev_file}l'):
-            self.preprocess_file(f'{path}/{args.dev_file}')
+        if not os.path.exists('{path}/{args.train_file}l'):
+            self.preprocess_file('{path}/{args.train_file}')
+        if not os.path.exists('{path}/{args.dev_file}l'):
+            self.preprocess_file('{path}/{args.dev_file}')
 
         self.RAW = data.RawField()
         # explicit declaration for torchtext compatibility
@@ -54,8 +54,8 @@ class SQuAD():
             print("building splits...")
             self.train, self.dev = data.TabularDataset.splits(
                 path=path,
-                train=f'{args.train_file}l',
-                validation=f'{args.dev_file}l',
+                train='{args.train_file}l',
+                validation='{args.dev_file}l',
                 format='json',
                 fields=dict_fields)
 
@@ -72,7 +72,7 @@ class SQuAD():
         self.WORD.build_vocab(self.train, self.dev, vectors=GloVe(name='6B', dim=args.word_dim))
 
         print("building iterators...")
-        device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
         self.train_iter, self.dev_iter = \
             data.BucketIterator.splits((self.train, self.dev),
                                        batch_sizes=[args.train_batch_size, args.dev_batch_size],

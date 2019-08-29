@@ -23,10 +23,10 @@ class BiDAF(nn.Module):
         # highway network
         assert self.args.hidden_size * 2 == (self.args.char_channel_size + self.args.word_dim)
         for i in range(2):
-            setattr(self, f'highway_linear{i}',
+            setattr(self, 'highway_linear{i}',
                     nn.Sequential(Linear(args.hidden_size * 2, args.hidden_size * 2),
                                   nn.ReLU()))
-            setattr(self, f'highway_gate{i}',
+            setattr(self, 'highway_gate{i}',
                     nn.Sequential(Linear(args.hidden_size * 2, args.hidden_size * 2),
                                   nn.Sigmoid()))
 
@@ -99,8 +99,8 @@ class BiDAF(nn.Module):
             # (batch, seq_len, char_channel_size + word_dim)
             x = torch.cat([x1, x2], dim=-1)
             for i in range(2):
-                h = getattr(self, f'highway_linear{i}')(x)
-                g = getattr(self, f'highway_gate{i}')(x)
+                h = getattr(self, 'highway_linear{i}')(x)
+                g = getattr(self, 'highway_gate{i}')(x)
                 x = g * h + (1 - g) * x
             # (batch, seq_len, hidden_size * 2)
             return x
