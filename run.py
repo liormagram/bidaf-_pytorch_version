@@ -145,8 +145,8 @@ def main():
     data = SQuAD(args)
     setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
     setattr(args, 'word_vocab_size', len(data.WORD.vocab))
-    setattr(args, 'dataset_file', '.data/squad/{args.dev_file}')
-    setattr(args, 'prediction_file', 'prediction{args.gpu}.out')
+    setattr(args, 'dataset_file', '.data/squad/{}'.format(args.dev_file))
+    setattr(args, 'prediction_file', 'prediction{}.out'.format(args.gpu))
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
@@ -154,7 +154,7 @@ def main():
     best_model = train(args, data)
     if not os.path.exists('saved_models'):
         os.makedirs('saved_models')
-    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{args.model_time}.pt')
+    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
     print('training finished!')
 
 
