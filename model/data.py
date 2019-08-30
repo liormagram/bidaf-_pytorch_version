@@ -20,10 +20,10 @@ class SQuAD():
         dev_examples_path = dataset_path + 'dev_examples.pt'
 
         print("preprocessing data files...")
-        if not os.path.exists('{path}/{args.train_file}l'):
-            self.preprocess_file('{path}/{args.train_file}')
-        if not os.path.exists('{path}/{args.dev_file}l'):
-            self.preprocess_file('{path}/{args.dev_file}')
+        if not os.path.exists('{}/{}l'.format(path, args.train_file)):
+            self.preprocess_file('{}/{}'.format(path, args.train_file))
+        if not os.path.exists('{}/{}l'.format(path, args.dev_file)):
+            self.preprocess_file('{}/{}'.format(path, args.dev_file))
 
         self.RAW = data.RawField()
         # explicit declaration for torchtext compatibility
@@ -54,8 +54,8 @@ class SQuAD():
             print("building splits...")
             self.train, self.dev = data.TabularDataset.splits(
                 path=path,
-                train='{args.train_file}l',
-                validation='{args.dev_file}l',
+                train='{}l'.format(args.train_file),
+                validation='{}l'.format(args.dev_file),
                 format='json',
                 fields=dict_fields)
 
@@ -72,7 +72,7 @@ class SQuAD():
         self.WORD.build_vocab(self.train, self.dev, vectors=GloVe(name='6B', dim=args.word_dim))
 
         print("building iterators...")
-        device = torch.device("cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
         self.train_iter, self.dev_iter = \
             data.BucketIterator.splits((self.train, self.dev),
                                        batch_sizes=[args.train_batch_size, args.dev_batch_size],
@@ -82,8 +82,7 @@ class SQuAD():
     def preprocess_file(self, path):
         dump = []
         abnormals = [' ', '\n', '\u3000', '\u202f', '\u2009']
-        print(path)
-        print('hello')
+
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             data = data['data']
@@ -129,7 +128,7 @@ class SQuAD():
                                               ('s_idx', s_idx),
                                               ('e_idx', e_idx)]))
 
-        with open('{path}l', 'w', encoding='utf-8') as f:
+        with open('{}l'.format(path), 'w', encoding='utf-8') as f:
             for line in dump:
                 json.dump(line, f)
                 print('', file=f)
