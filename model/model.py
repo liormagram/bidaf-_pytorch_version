@@ -58,14 +58,10 @@ class BiDAF(nn.Module):
         # 6. Output Layer
         self.p1_weight_g = Linear(args.hidden_size * 8, 1, dropout=args.dropout)
         self.p1_weight_m = Linear(args.hidden_size * 2, 1, dropout=args.dropout)
-        self.p2_weight_g = Linear(args.hidden_size * 8, 1, dropout=args.dropout)
-        self.p2_weight_m = Linear(args.hidden_size * 2, 1, dropout=args.dropout)
 
-        self.output_LSTM = LSTM(input_size=args.hidden_size * 2,
-                                hidden_size=args.hidden_size,
-                                bidirectional=True,
-                                batch_first=True,
-                                dropout=args.dropout)
+        self.fc_hidden = Linear(args.max_c_len, args.hidden_size)
+        self.binarize = Linear(args.hidden_size, 2)
+        self.max_c_len = args.max_c_len
 
         self.dropout = nn.Dropout(p=args.dropout)
 
@@ -160,13 +156,15 @@ class BiDAF(nn.Module):
             :return: p1: (batch, c_len), p2: (batch, c_len)
             """
             # (batch, c_len)
-            p1 = (self.p1_weight_g(g) + self.p1_weight_m(m)).squeeze()
-            # (batch, c_len, hidden_size * 2)
-            m2 = self.output_LSTM((m, l))[0]
-            # (batch, c_len)
-            p2 = (self.p2_weight_g(g) + self.p2_weight_m(m2)).squeeze()
-
-            return p1, p2
+            # p1 = (self.p1_weight_g(g) + self.p1_weight_m(m)).squeeze()
+            p1 = (self.p1_weight_m(m)).squeeze()
+            # (batch, 506)
+            p_padded = F.pad(p1, (0, max(0, self.max_c_len-p1.shape[1])))
+            hidden_p = self.fc_hidden(p_padded)
+            F.relu(hidden_p, inplace=True)
+            # (batch, 2)
+            b = self.binarize(hidden_p).squeeze()
+            return b
 
         # 1. Character Embedding Layer
         c_char = char_emb_layer(batch.c_char)
@@ -188,7 +186,7 @@ class BiDAF(nn.Module):
         # 5. Modeling Layer
         m = self.modeling_LSTM2((self.modeling_LSTM1((g, c_lens))[0], c_lens))[0]
         # 6. Output Layer
-        p1, p2 = output_layer(g, m, c_lens)
+        b = output_layer(g, m, c_lens)
 
-        # (batch, c_len), (batch, c_len)
-        return p1, p2
+        # (batch, 2)
+        return b

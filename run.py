@@ -1,20 +1,23 @@
 import argparse
-import copy, json, os
-
-import torch
-from torch import nn, optim
-from tensorboardX import SummaryWriter
+import copy
+import json
+import os
 from time import gmtime, strftime
 
-from model.model import BiDAF
+import torch
+from tensorboardX import SummaryWriter
+from torch import nn, optim
+
+import evaluate
 from model.data import SQuAD
 from model.ema import EMA
-import evaluate
+from model.model import BiDAF
 
 
 def train(args, data):
     device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    best_model = copy.deepcopy(model)
 
     ema = EMA(args.exp_decay_rate)
     for name, param in model.named_parameters():
@@ -28,22 +31,22 @@ def train(args, data):
 
     model.train()
     loss, last_epoch = 0, -1
-    max_dev_exact, max_dev_f1 = -1, -1
+    max_dev_accuracy = -1
 
     iterator = data.train_iter
     for i, batch in enumerate(iterator):
+        print('iteration: {}'.format(str(i)))
         present_epoch = int(iterator.epoch)
         if present_epoch == args.epoch:
             break
         if present_epoch > last_epoch:
             print('epoch:', present_epoch + 1)
         last_epoch = present_epoch
-
-        p1, p2 = model(batch)
+        b = model(batch)
 
         optimizer.zero_grad()
-        batch_loss = criterion(p1, batch.s_idx) + criterion(p2, batch.e_idx)
-        loss += batch_loss.item()
+        batch_loss = criterion(b, batch.answer)
+        loss = batch_loss.item()
         batch_loss.backward()
         optimizer.step()
 
@@ -52,26 +55,23 @@ def train(args, data):
                 ema.update(name, param.data)
 
         if (i + 1) % args.print_freq == 0:
-            dev_loss, dev_exact, dev_f1 = test(model, ema, args, data)
+            dev_loss, accuracy = test(model, ema, args, data)
             c = (i + 1) // args.print_freq
 
             writer.add_scalar('loss/train', loss, c)
             writer.add_scalar('loss/dev', dev_loss, c)
-            writer.add_scalar('exact_match/dev', dev_exact, c)
-            writer.add_scalar('f1/dev', dev_f1, c)
+            writer.add_scalar('accuracy/dev', accuracy, c)
             print('train loss: {} / dev loss: {}'.format(loss, dev_loss) +
-                  ' / dev EM: {} / dev F1: {}'.format(dev_exact, dev_f1))
+                  ' / dev accuracy: {}'.format(accuracy))
 
-            if dev_f1 > max_dev_f1:
-                max_dev_f1 = dev_f1
-                max_dev_exact = dev_exact
+            if accuracy > max_dev_accuracy:
+                max_dev_accuracy = accuracy
                 best_model = copy.deepcopy(model)
 
-            loss = 0
             model.train()
 
     writer.close()
-    print('max dev EM: {} / max dev F1: {}'.format(max_dev_exact, max_dev_f1))
+    print('max dev accuracy: {}'.format(max_dev_accuracy))
 
     return best_model
 
@@ -91,24 +91,15 @@ def test(model, ema, args, data):
 
     with torch.set_grad_enabled(False):
         for batch in iter(data.dev_iter):
-            p1, p2 = model(batch)
-            batch_loss = criterion(p1, batch.s_idx) + criterion(p2, batch.e_idx)
+            b = model(batch)
+            batch_loss = criterion(b, batch.answer)
             loss += batch_loss.item()
 
-            # (batch, c_len, c_len)
-            batch_size, c_len = p1.size()
-            ls = nn.LogSoftmax(dim=1)
-            mask = (torch.ones(c_len, c_len) * float('-inf')).to(device).tril(-1).unsqueeze(0).expand(batch_size, -1, -1)
-            score = (ls(p1).unsqueeze(2) + ls(p2).unsqueeze(1)) + mask
-            score, s_idx = score.max(dim=1)
-            score, e_idx = score.max(dim=1)
-            s_idx = torch.gather(s_idx, 1, e_idx.view(-1, 1)).squeeze()
-
+            batch_size, _ = b.size()
             for i in range(batch_size):
-                id = batch.id[i]
-                answer = batch.c_word[0][i][s_idx[i]:e_idx[i]+1]
-                answer = ' '.join([data.WORD.vocab.itos[idx] for idx in answer])
-                answers[id] = answer
+                answer_id = batch.id[i]
+                answer = torch.argmax(b[i]).item()
+                answers[answer_id] = answer
 
         for name, param in model.named_parameters():
             if param.requires_grad:
@@ -117,8 +108,8 @@ def test(model, ema, args, data):
     with open(args.prediction_file, 'w', encoding='utf-8') as f:
         print(json.dumps(answers), file=f)
 
-    results = evaluate.main(args)
-    return loss, results['exact_match'], results['f1']
+    accuracy = evaluate.main(args)
+    return loss, accuracy
 
 
 def main():
@@ -135,10 +126,11 @@ def main():
     parser.add_argument('--gpu', default=0, type=int)
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.5, type=float)
-    parser.add_argument('--print-freq', default=250, type=int)
+    parser.add_argument('--print-freq', default=20, type=int)
     parser.add_argument('--train-batch-size', default=60, type=int)
     parser.add_argument('--train-file', default='train-v1.1.json')
     parser.add_argument('--word-dim', default=100, type=int)
+    parser.add_argument('--max_c_len', default=600, type=int)
     args = parser.parse_args()
 
     print('loading SQuAD data...')

@@ -36,16 +36,18 @@ class SQuAD():
         dict_fields = {'id': ('id', self.RAW),
                        's_idx': ('s_idx', self.LABEL),
                        'e_idx': ('e_idx', self.LABEL),
+                       'answer': ('answer', self.LABEL),
                        'context': [('c_word', self.WORD), ('c_char', self.CHAR)],
                        'question': [('q_word', self.WORD), ('q_char', self.CHAR)]}
 
         list_fields = [('id', self.RAW), ('s_idx', self.LABEL), ('e_idx', self.LABEL),
+                       ('answer', self.LABEL),
                        ('c_word', self.WORD), ('c_char', self.CHAR),
                        ('q_word', self.WORD), ('q_char', self.CHAR)]
 
         if os.path.exists(dataset_path):
             print("loading splits...")
-            train_examples = torch.load(train_examples_path)
+            train_examples = torch.load(dev_examples_path)
             dev_examples = torch.load(dev_examples_path)
 
             self.train = data.Dataset(examples=train_examples, fields=list_fields)
@@ -97,7 +99,7 @@ class SQuAD():
                         for ans in qa['answers']:
                             answer = ans['text']
                             s_idx = ans['answer_start']
-                            e_idx = s_idx + len(answer)
+                            e_idx = s_idx + len(str(answer))
 
                             l = 0
                             s_found = False

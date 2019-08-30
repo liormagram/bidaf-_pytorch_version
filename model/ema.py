@@ -1,4 +1,4 @@
-class EMA():
+class EMA:
     def __init__(self, mu):
         self.mu = mu
         self.shadow = {}
