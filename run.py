@@ -13,7 +13,7 @@ import evaluate
 
 
 def train(args, data):
-    device = torch.device("cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     model = BiDAF(args, data.WORD.vocab.vectors).to(device)
 
     ema = EMA(args.exp_decay_rate)
@@ -59,8 +59,8 @@ def train(args, data):
             writer.add_scalar('loss/dev', dev_loss, c)
             writer.add_scalar('exact_match/dev', dev_exact, c)
             writer.add_scalar('f1/dev', dev_f1, c)
-            print('train loss: {loss:.3f} / dev loss: {dev_loss:.3f}'
-                  ' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
+            print('train loss: {} / dev loss: {}'.format(loss, dev_loss) +
+                  ' / dev EM: {} / dev F1: {}'.format(dev_exact, dev_f1))
 
             if dev_f1 > max_dev_f1:
                 max_dev_f1 = dev_f1
@@ -71,13 +71,13 @@ def train(args, data):
             model.train()
 
     writer.close()
-    print('max dev EM: {max_dev_exact:.3f} / max dev F1: {max_dev_f1:.3f}')
+    print('max dev EM: {} / max dev F1: {}'.format(max_dev_exact, max_dev_f1))
 
     return best_model
 
 
 def test(model, ema, args, data):
-    device = torch.device("cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     loss = 0
     answers = dict()
