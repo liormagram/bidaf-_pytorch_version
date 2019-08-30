@@ -8,3 +8,7 @@
 \.vector_cache/
 
 runs/
+
+\.data/squad/squadies/
+
+\.data/original_squad/
