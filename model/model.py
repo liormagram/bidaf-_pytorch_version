@@ -95,7 +95,7 @@ class BiDAF(nn.Module):
             max_batch = max(context_lens)
             # (batch, max_batch, 6)
             padded_embedding = [image + [[0, 0, 0, 0, 0, 0]] * (max_batch - len(image)) for image in list_embedding]
-            tensor_embedding = torch.tensor(padded_embedding)
+            tensor_embedding = torch.tensor(padded_embedding).long()
             expanded_embedding = self.embedding_expansion(tensor_embedding)
 
             return expanded_embedding, torch.Tensor(context_lens).int()
