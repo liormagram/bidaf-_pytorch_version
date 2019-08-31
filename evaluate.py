@@ -29,10 +29,13 @@ def main(args):
     with open(args.dataset_file) as dataset_file:
         dataset_json = json.load(dataset_file)
         dataset = dataset_json['data']
-    with open(args.prediction_file) as prediction_file:
-        predictions = json.load(prediction_file)
-    accuracy = evaluate(dataset, predictions)
-    return accuracy
+    with open(args.dev_prediction_file) as dev_prediction_file:
+        dev_predictions = json.load(dev_prediction_file)
+    with open(args.test_prediction_file) as test_prediction_file:
+        test_predictions = json.load(test_prediction_file)
+    dev_accuracy = evaluate(dataset, dev_predictions)
+    test_accuracy = evaluate(dataset, test_predictions)
+    return dev_accuracy, test_accuracy
 
 
 if __name__ == '__main__':
