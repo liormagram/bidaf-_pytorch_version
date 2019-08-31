@@ -12,3 +12,5 @@ runs/
 \.data/squad/squadies/
 
 \.data/original_squad/
+
+saved_models/

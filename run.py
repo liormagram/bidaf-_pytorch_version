@@ -34,41 +34,39 @@ def train(args, data):
     max_dev_accuracy = -1
 
     iterator = data.train_iter
-    for i, batch in enumerate(iterator):
-        print('iteration: {}'.format(str(i)))
-        present_epoch = int(iterator.epoch)
-        if present_epoch == args.epoch:
-            break
-        if present_epoch > last_epoch:
-            print('epoch:', present_epoch + 1)
-        last_epoch = present_epoch
-        b = model(batch)
+    for epoch in range(args.epoch):
+        if epoch % (args.print_freq * 5) == 0:
+            print('epoch: {} / {}'.format(epoch + 1, args.epoch))
+        for i, batch in enumerate(iterator):
+            # print('iteration: {}'.format(str(i)))
 
-        optimizer.zero_grad()
-        batch_loss = criterion(b, batch.answer)
-        loss = batch_loss.item()
-        batch_loss.backward()
-        optimizer.step()
+            b = model(batch)
 
-        for name, param in model.named_parameters():
-            if param.requires_grad:
-                ema.update(name, param.data)
+            optimizer.zero_grad()
+            batch_loss = criterion(b, batch.answer)
+            loss = batch_loss.item()
+            batch_loss.backward()
+            optimizer.step()
 
-        if (i + 1) % args.print_freq == 0:
-            dev_loss, accuracy = test(model, ema, args, data)
-            c = (i + 1) // args.print_freq
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    ema.update(name, param.data)
 
-            writer.add_scalar('loss/train', loss, c)
-            writer.add_scalar('loss/dev', dev_loss, c)
-            writer.add_scalar('accuracy/dev', accuracy, c)
-            print('train loss: {} / dev loss: {}'.format(loss, dev_loss) +
-                  ' / dev accuracy: {}'.format(accuracy))
+            if (i + 1) % args.print_freq == 0:
+                dev_loss, accuracy = test(model, ema, args, data)
+                c = (i + 1) // args.print_freq
 
-            if accuracy > max_dev_accuracy:
-                max_dev_accuracy = accuracy
-                best_model = copy.deepcopy(model)
+                writer.add_scalar('loss/train', loss, c)
+                writer.add_scalar('loss/dev', dev_loss, c)
+                writer.add_scalar('accuracy/dev', accuracy, c)
+                print('train loss: {} / dev loss: {}'.format(loss, dev_loss) +
+                      ' / dev accuracy: {}'.format(accuracy))
 
-            model.train()
+                if accuracy > max_dev_accuracy:
+                    max_dev_accuracy = accuracy
+                    best_model = copy.deepcopy(model)
+
+                model.train()
 
     writer.close()
     print('max dev accuracy: {}'.format(max_dev_accuracy))

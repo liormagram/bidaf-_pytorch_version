@@ -163,8 +163,8 @@ class BiDAF(nn.Module):
             hidden_p = self.fc_hidden(p_padded)
             F.relu(hidden_p, inplace=True)
             # (batch, 2)
-            b = self.binarize(hidden_p).squeeze()
-            return b
+            bin = self.binarize(hidden_p).squeeze()
+            return bin
 
         # 1. Character Embedding Layer
         c_char = char_emb_layer(batch.c_char)
@@ -186,7 +186,7 @@ class BiDAF(nn.Module):
         # 5. Modeling Layer
         m = self.modeling_LSTM2((self.modeling_LSTM1((g, c_lens))[0], c_lens))[0]
         # 6. Output Layer
-        b = output_layer(g, m, c_lens)
+        output = output_layer(g, m, c_lens)
 
         # (batch, 2)
-        return b
+        return output
