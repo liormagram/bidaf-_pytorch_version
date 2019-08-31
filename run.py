@@ -93,6 +93,8 @@ def test(model, ema, args, data):
 
     with open(args.dev_prediction_file, 'w', encoding='utf-8') as f:
         print(json.dumps(dev_answers), file=f)
+    with open(args.test_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(test_answers), file=f)
 
     dev_accuracy, test_accuracy = evaluate.main(args)
     return dev_loss, test_loss, dev_accuracy, test_accuracy
