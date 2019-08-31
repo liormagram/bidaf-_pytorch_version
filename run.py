@@ -35,7 +35,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
-        if epoch % (args.print_freq * 5) == 0:
+        if epoch % args.print_freq == 0:
             print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
             # print('iteration: {}'.format(str(i)))
