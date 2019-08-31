@@ -84,7 +84,7 @@ class SQuAD():
         device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
         self.train_iter, self.dev_iter, self.test_iter = \
             data.BucketIterator.splits((self.train, self.dev, self.test),
-                                       batch_sizes=[args.train_batch_size, args.dev_batch_size, args.test-batch-size],
+                                       batch_sizes=[args.train_batch_size, args.dev_batch_size, args.test_batch_size],
                                        device=device,
                                        sort_key=lambda x: len(x.c_word))
 
