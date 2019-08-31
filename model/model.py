@@ -37,6 +37,10 @@ class BiDAF(nn.Module):
                                  batch_first=True,
                                  dropout=args.dropout)
 
+        # 3.5 Embedding Expansion Layer
+        # TODO un-magic the numbers
+        self.embedding_expansion = Linear(6, 200)
+
         # 4. Attention Flow Layer
         self.att_weight_c = Linear(args.hidden_size * 2, 1)
         self.att_weight_q = Linear(args.hidden_size * 2, 1)
@@ -85,6 +89,16 @@ class BiDAF(nn.Module):
             x = x.view(batch_size, -1, self.args.char_channel_size)
 
             return x
+
+        def direct_shape_embeddings(list_embedding):
+            context_lens = [len(image) for image in batch.c_emb]
+            max_batch = max(context_lens)
+            # (batch, max_batch, 6)
+            padded_embedding = [image + [[0, 0, 0, 0, 0, 0]] * (max_batch - len(image)) for image in list_embedding]
+            tensor_embedding = torch.Tensor(padded_embedding)
+            expanded_embedding = self.embedding_expansion(tensor_embedding)
+
+            return expanded_embedding, torch.Tensor(context_lens).int()
 
         def highway_network(x1, x2):
             """
@@ -167,19 +181,22 @@ class BiDAF(nn.Module):
             return bin
 
         # 1. Character Embedding Layer
-        c_char = char_emb_layer(batch.c_char)
+        # c_char = char_emb_layer(batch.c_char)
         q_char = char_emb_layer(batch.q_char)
+
         # 2. Word Embedding Layer
-        c_word = self.word_emb(batch.c_word[0])
+        # c_word = self.word_emb(batch.c_word[0])
         q_word = self.word_emb(batch.q_word[0])
-        c_lens = batch.c_word[1]
+        # c_lens = batch.c_word[1]
         q_lens = batch.q_word[1]
 
         # Highway network
-        c = highway_network(c_char, c_word)
+        # c = highway_network(c_char, c_word)
         q = highway_network(q_char, q_word)
+        c, c_lens = direct_shape_embeddings(batch.c_emb)
+
         # 3. Contextual Embedding Layer
-        c = self.context_LSTM((c, c_lens))[0]
+        # c = self.context_LSTM((c, c_lens))[0]
         q = self.context_LSTM((q, q_lens))[0]
         # 4. Attention Flow Layer
         g = att_flow_layer(c, q)

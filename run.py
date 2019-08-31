@@ -35,8 +35,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
-        if epoch % args.print_freq == 0:
-            print('epoch: {} / {}'.format(epoch + 1, args.epoch))
+        print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
             # print('iteration: {}'.format(str(i)))
 
@@ -59,8 +58,7 @@ def train(args, data):
                 writer.add_scalar('loss/train', loss, c)
                 writer.add_scalar('loss/dev', dev_loss, c)
                 writer.add_scalar('accuracy/dev', accuracy, c)
-                print('train loss: {} / dev loss: {}'.format(loss, dev_loss) +
-                      ' / dev accuracy: {}'.format(accuracy))
+                print('train loss: {} / dev loss: {}'.format(loss, dev_loss) + ' / dev accuracy: {}'.format(accuracy))
 
                 if accuracy > max_dev_accuracy:
                     max_dev_accuracy = accuracy
@@ -128,7 +126,7 @@ def main():
     parser.add_argument('--train-batch-size', default=60, type=int)
     parser.add_argument('--train-file', default='nlvr_train.json')
     parser.add_argument('--word-dim', default=100, type=int)
-    parser.add_argument('--max_c_len', default=600, type=int)
+    parser.add_argument('--max_c_len', default=20, type=int)
     args = parser.parse_args()
 
     print('loading SQuAD data...')
