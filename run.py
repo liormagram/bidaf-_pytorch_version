@@ -63,7 +63,7 @@ def train(args, data):
                 if accuracy > max_dev_accuracy:
                     max_dev_accuracy = accuracy
                     best_model = copy.deepcopy(model)
-
+                    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
                 model.train()
 
     writer.close()
