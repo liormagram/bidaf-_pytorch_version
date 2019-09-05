@@ -25,8 +25,8 @@ class SQuAD():
             self.preprocess_file('{}/{}'.format(path, args.train_file))
         if not os.path.exists('{}/{}l'.format(path, args.dev_file)):
             self.preprocess_file('{}/{}'.format(path, args.dev_file))
-        if not os.path.exists('{}/{}l'.format(path, args.test_file)):
-            self.preprocess_file('{}/{}'.format(path, args.test_file))
+        # if not os.path.exists('{}/{}l'.format(path, args.test_file)):
+        self.preprocess_file('{}/{}'.format(path, args.test_file))
 
         self.RAW = data.RawField()
         # explicit declaration for torchtext compatibility
@@ -50,7 +50,7 @@ class SQuAD():
 
         if os.path.exists(dataset_path):
             print("loading splits...")
-            train_examples = torch.load(dev_examples_path)
+            train_examples = torch.load(train_examples_path)
             dev_examples = torch.load(dev_examples_path)
             test_examples = torch.load(test_examples_path)
 
