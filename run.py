@@ -120,6 +120,42 @@ def get_answers(backup_params, criterion, model, iterator):
                 param.data.copy_(backup_params.get(name))
     return loss, answers
 
+def test_best_model(best_weights_path, args, data):
+
+    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
+    criterion = nn.CrossEntropyLoss()
+    model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    model.load_state_dict(torch.load(best_weights_path))
+    model.eval()
+
+    ema = EMA(args.exp_decay_rate)
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            ema.register(name, param.data)
+
+    backup_params = EMA(0)
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            backup_params.register(name, param.data)
+            param.data.copy_(ema.get(name))
+
+    dev_iterator = data.dev_iter
+    test_iterator = data.test_iter
+    dev_loss, dev_answers = get_answers(backup_params, criterion, model, dev_iterator)
+    test_loss, test_answers = get_answers(backup_params, criterion, model, test_iterator)
+
+    with open(args.dev_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(dev_answers), file=f)
+    with open(args.test_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(test_answers), file=f)
+
+    dev_accuracy, test_accuracy = evaluate.main(args)
+
+    print('dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
+          format(dev_loss, dev_accuracy, test_loss, test_accuracy))
+
+    return dev_loss, test_loss, dev_accuracy, test_accuracy
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -154,13 +190,18 @@ def main():
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
-    print('training start!')
-    best_model = train(args, data)
-    if not os.path.exists('saved_models'):
-        os.makedirs('saved_models')
-    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
-    print('training finished!')
+    # print('training start!')
+    # best_model = train(args, data)
+    # if not os.path.exists('saved_models'):
+    #     os.makedirs('saved_models')
+    # torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
+    # print('training finished!')
 
+
+    print('testing start')
+    best_weights_path = 'BiDAF_16%3A37%3A43.pt'
+    test_best_model(best_weights_path, args, data)
+    print('testing finished')
 
 if __name__ == '__main__':
     main()
