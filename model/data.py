@@ -25,8 +25,8 @@ class SQuAD():
             self.preprocess_file('{}/{}'.format(path, args.train_file))
         if not os.path.exists('{}/{}l'.format(path, args.dev_file)):
             self.preprocess_file('{}/{}'.format(path, args.dev_file))
-        # if not os.path.exists('{}/{}l'.format(path, args.test_file)):
-        self.preprocess_file('{}/{}'.format(path, args.test_file))
+        if not os.path.exists('{}/{}l'.format(path, args.test_file)):
+            self.preprocess_file('{}/{}'.format(path, args.test_file))
 
         self.RAW = data.RawField()
         # explicit declaration for torchtext compatibility
