@@ -39,7 +39,7 @@ def train(args, data):
             print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
             if i % 10 == 0:
-                print('iteration: {}'.format(str(i)))
+                print('iteration: {}, epoch: {}'.format(str(i), epoch + 1))
 
             b = model(batch)
 
@@ -53,7 +53,7 @@ def train(args, data):
                 if param.requires_grad:
                     ema.update(name, param.data)
 
-            if (i + 1) % (1000 * args.print_freq) == 0:
+            if (i + 1) % (10 * args.print_freq) == 0:
                 dev_loss, test_loss, dev_accuracy, test_accuracy = test(model, ema, args, data)
                 c = (i + 1) // args.print_freq
 
