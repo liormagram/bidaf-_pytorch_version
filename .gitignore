@@ -14,3 +14,6 @@ runs/
 \.data/original_squad/
 
 saved_models/
+
+dev_prediction0.out
+test_prediction0.out
