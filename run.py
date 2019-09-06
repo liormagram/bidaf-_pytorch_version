@@ -109,6 +109,25 @@ def test(model, ema, args, data):
     accuracy = evaluate.main(args)
     return loss, accuracy
 
+def get_answers(backup_params, criterion, model, iterator):
+    answers = {}
+    loss = 0
+    with torch.set_grad_enabled(False):
+        for batch in iter(iterator):
+            b = model(batch)
+            batch_loss = criterion(b, batch.answer)
+            loss += batch_loss.item()
+
+            batch_size, _ = b.size()
+            for i in range(batch_size):
+                answer_id = batch.id[i]
+                answer = torch.argmax(b[i]).item()
+                answers[answer_id] = answer
+
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                param.data.copy_(backup_params.get(name))
+    return loss, answers
 
 def test_best_model(best_weights_path, args, data):
 
