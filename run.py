@@ -207,7 +207,7 @@ def main():
     # model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
     # model.eval()
 
-    best_weights_path = 'BiDAF_16%3A37%3A43.pt'
+    best_weights_path = 'BiDAF_temp.pt'
     test_best_model(best_weights_path, args, data)
 
     # print('training start!')
