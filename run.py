@@ -191,9 +191,9 @@ def main():
     print('data loading complete!')
 
     print('training start!')
-    best_model = train(args, data)
     if not os.path.exists('saved_models'):
         os.makedirs('saved_models')
+    best_model = train(args, data)
     torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
     print('training finished!')
     #
