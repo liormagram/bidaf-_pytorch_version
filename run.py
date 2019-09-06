@@ -195,7 +195,8 @@ def main():
     setattr(args, 'word_vocab_size', len(data.WORD.vocab))
     setattr(args, 'dev_dataset_file', '.data/squad/{}'.format(args.dev_file))
     setattr(args, 'test_dataset_file', '.data/squad/{}'.format(args.test_file))
-    setattr(args, 'prediction_file', 'prediction{}.out'.format(args.gpu))
+    setattr(args, 'dev_prediction_file', 'dev_prediction{}.out'.format(args.gpu))
+    setattr(args, 'test_prediction_file', 'test_prediction{}.out'.format(args.gpu))
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
