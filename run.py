@@ -125,7 +125,7 @@ def test_best_model(best_weights_path, args, data):
     device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     model = BiDAF(args, data.WORD.vocab.vectors).to(device)
-    model.load_state_dict(torch.load(best_weights_path))
+    model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
     model.eval()
 
     ema = EMA(args.exp_decay_rate)
@@ -190,18 +190,18 @@ def main():
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
-    # print('training start!')
-    # best_model = train(args, data)
-    # if not os.path.exists('saved_models'):
-    #     os.makedirs('saved_models')
-    # torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
-    # print('training finished!')
-
-
-    print('testing start')
-    best_weights_path = 'BiDAF_16%3A37%3A43.pt'
-    test_best_model(best_weights_path, args, data)
-    print('testing finished')
+    print('training start!')
+    best_model = train(args, data)
+    if not os.path.exists('saved_models'):
+        os.makedirs('saved_models')
+    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
+    print('training finished!')
+    #
+    #
+    # print('testing start')
+    # best_weights_path = 'BiDAF_16%3A37%3A43.pt'
+    # test_best_model(best_weights_path, args, data)
+    # print('testing finished')
 
 if __name__ == '__main__':
     main()
