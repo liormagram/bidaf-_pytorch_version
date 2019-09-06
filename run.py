@@ -140,12 +140,19 @@ def main():
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
-    print('training start!')
-    best_model = train(args, data)
-    if not os.path.exists('saved_models'):
-        os.makedirs('saved_models')
-    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
-    print('training finished!')
+    best_weights_path = 'BiDAF_16%3A37%3A43.pt'
+    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
+    criterion = nn.CrossEntropyLoss()
+    model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
+    model.eval()
+
+    # print('training start!')
+    # best_model = train(args, data)
+    # if not os.path.exists('saved_models'):
+    #     os.makedirs('saved_models')
+    # torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
+    # print('training finished!')
 
 
 if __name__ == '__main__':
