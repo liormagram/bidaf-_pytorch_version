@@ -52,7 +52,7 @@ def train(args, data):
                 if param.requires_grad:
                     ema.update(name, param.data)
 
-            if (i + 1) % (100 * args.print_freq) == 0:
+            if (i + 1) % (1000 * args.print_freq) == 0:
                 dev_loss, test_loss, dev_accuracy, test_accuracy = test(model, ema, args, data)
                 c = (i + 1) // args.print_freq
 
