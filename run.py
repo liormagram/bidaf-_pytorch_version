@@ -35,11 +35,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
-        if epoch % args.print_freq == 0:
-            print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
-            # if i % 10 == 0:
-            #     print('iteration: {}, epoch: {}'.format(str(i), epoch + 1))
 
             b = model(batch)
 
@@ -60,8 +56,8 @@ def train(args, data):
                 writer.add_scalar('loss/train', loss, c)
                 writer.add_scalar('loss/dev', dev_loss, c)
                 writer.add_scalar('accuracy/dev', dev_accuracy, c)
-                print('train loss: {} / dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
-                      format(loss, dev_loss, dev_accuracy, test_loss, test_accuracy))
+                print('epoch: {}, train loss: {} / dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
+                      format(epoch, loss, dev_loss, dev_accuracy, test_loss, test_accuracy))
 
                 if dev_accuracy > max_dev_accuracy:
                     max_dev_accuracy = dev_accuracy
