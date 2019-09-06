@@ -110,6 +110,43 @@ def test(model, ema, args, data):
     return loss, accuracy
 
 
+def test_best_model(best_weights_path, args, data):
+
+    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
+    criterion = nn.CrossEntropyLoss()
+    model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
+    model.eval()
+
+    ema = EMA(args.exp_decay_rate)
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            ema.register(name, param.data)
+
+    backup_params = EMA(0)
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            backup_params.register(name, param.data)
+            param.data.copy_(ema.get(name))
+
+    dev_iterator = data.dev_iter
+    test_iterator = data.test_iter
+    dev_loss, dev_answers = get_answers(backup_params, criterion, model, dev_iterator)
+    test_loss, test_answers = get_answers(backup_params, criterion, model, test_iterator)
+
+    with open(args.dev_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(dev_answers), file=f)
+    with open(args.test_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(test_answers), file=f)
+
+    dev_accuracy, test_accuracy = evaluate.main(args)
+
+    print('dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
+          format(dev_loss, dev_accuracy, test_loss, test_accuracy))
+
+    return dev_loss, test_loss, dev_accuracy, test_accuracy
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--char-dim', default=8, type=int)
@@ -117,7 +154,9 @@ def main():
     parser.add_argument('--char-channel-size', default=100, type=int)
     parser.add_argument('--context-threshold', default=400, type=int)
     parser.add_argument('--dev-batch-size', default=100, type=int)
+    parser.add_argument('--test-batch-size', default=100, type=int)
     parser.add_argument('--dev-file', default='nlvr_dev.json')
+    parser.add_argument('--test-file', default='nlvr_test.json')
     parser.add_argument('--dropout', default=0.2, type=float)
     parser.add_argument('--epoch', default=12, type=int)
     parser.add_argument('--exp-decay-rate', default=0.999, type=float)
@@ -135,17 +174,21 @@ def main():
     data = SQuAD(args)
     setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
     setattr(args, 'word_vocab_size', len(data.WORD.vocab))
-    setattr(args, 'dataset_file', '.data/squad/{}'.format(args.dev_file))
+    setattr(args, 'dev_dataset_file', '.data/squad/{}'.format(args.dev_file))
+    setattr(args, 'test_dataset_file', '.data/squad/{}'.format(args.test_file))
     setattr(args, 'prediction_file', 'prediction{}.out'.format(args.gpu))
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
+    # best_weights_path = 'BiDAF_16%3A37%3A43.pt'
+    # device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
+    # criterion = nn.CrossEntropyLoss()
+    # model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    # model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
+    # model.eval()
+
     best_weights_path = 'BiDAF_16%3A37%3A43.pt'
-    device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
-    criterion = nn.CrossEntropyLoss()
-    model = BiDAF(args, data.WORD.vocab.vectors).to(device)
-    model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
-    model.eval()
+    test_best_model(best_weights_path, args, data)
 
     # print('training start!')
     # best_model = train(args, data)
