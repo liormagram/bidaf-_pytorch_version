@@ -38,7 +38,8 @@ def train(args, data):
         if epoch % args.print_freq == 0:
             print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
-            # print('iteration: {}'.format(str(i)))
+            if i % 10 == 0:
+                print('iteration: {}'.format(str(i)))
 
             b = model(batch)
 
