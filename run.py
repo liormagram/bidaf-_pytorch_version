@@ -207,15 +207,15 @@ def main():
     # model.load_state_dict(torch.load(best_weights_path, map_location='cpu'))
     # model.eval()
 
-    best_weights_path = 'BiDAF_temp.pt'
-    test_best_model(best_weights_path, args, data)
-
-    # print('training start!')
-    # best_model = train(args, data)
-    # if not os.path.exists('saved_models'):
-    #     os.makedirs('saved_models')
-    # torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
-    # print('training finished!')
+    # best_weights_path = 'BiDAF_temp2.pt'
+    # test_best_model(best_weights_path, args, data)
+    #
+    print('training start!')
+    best_model = train(args, data)
+    if not os.path.exists('saved_models'):
+        os.makedirs('saved_models')
+    torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
+    print('training finished!')
 
 
 if __name__ == '__main__':
