@@ -50,7 +50,7 @@ class SQuAD():
 
         if os.path.exists(dataset_path):
             print("loading splits...")
-            train_examples = torch.load(dev_examples_path)
+            train_examples = torch.load(train_examples_path)
             dev_examples = torch.load(dev_examples_path)
             test_examples = torch.load(test_examples_path)
 
