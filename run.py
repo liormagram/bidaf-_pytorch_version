@@ -35,11 +35,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
-        if epoch % args.print_freq == 0:
-            print('epoch: {} / {}'.format(epoch + 1, args.epoch))
         for i, batch in enumerate(iterator):
-            # if i % 10 == 0:
-            #     print('iteration: {}, epoch: {}'.format(str(i), epoch + 1))
 
             b = model(batch)
 
@@ -60,8 +56,8 @@ def train(args, data):
                 writer.add_scalar('loss/train', loss, c)
                 writer.add_scalar('loss/dev', dev_loss, c)
                 writer.add_scalar('accuracy/dev', dev_accuracy, c)
-                print('train loss: {} / dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
-                      format(loss, dev_loss, dev_accuracy, test_loss, test_accuracy))
+                print('epoch: {}, train loss: {} / dev loss: {} / dev accuracy: {} / test loss: {} / test accuracy: {}'.
+                      format(epoch, rv(loss), rv(dev_loss), rv(dev_accuracy), rv(test_loss), rv(test_accuracy)))
 
                 if dev_accuracy > max_dev_accuracy:
                     max_dev_accuracy = dev_accuracy
@@ -121,8 +117,8 @@ def get_answers(backup_params, criterion, model, iterator):
                 param.data.copy_(backup_params.get(name))
     return loss, answers
 
-def test_best_model(best_weights_path, args, data):
 
+def test_best_model(best_weights_path, args, data):
     device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     model = BiDAF(args, data.WORD.vocab.vectors).to(device)
@@ -156,6 +152,11 @@ def test_best_model(best_weights_path, args, data):
           format(dev_loss, dev_accuracy, test_loss, test_accuracy))
 
     return dev_loss, test_loss, dev_accuracy, test_accuracy
+
+
+# round value
+def rv(value):
+    return round(value, 2)
 
 
 def main():
