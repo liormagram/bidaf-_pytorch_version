@@ -18,12 +18,15 @@ class SQuAD():
         dataset_path = path + '/torchtext/'
         train_examples_path = dataset_path + 'train_examples.pt'
         dev_examples_path = dataset_path + 'dev_examples.pt'
+        test_examples_path = dataset_path + 'test_examples.pt'
 
         print("preprocessing data files...")
         if not os.path.exists('{}/{}l'.format(path, args.train_file)):
             self.preprocess_file('{}/{}'.format(path, args.train_file))
         if not os.path.exists('{}/{}l'.format(path, args.dev_file)):
             self.preprocess_file('{}/{}'.format(path, args.dev_file))
+        if not os.path.exists('{}/{}l'.format(path, args.test_file)):
+            self.preprocess_file('{}/{}'.format(path, args.test_file))
 
         self.RAW = data.RawField()
         # explicit declaration for torchtext compatibility
@@ -47,33 +50,37 @@ class SQuAD():
 
         if os.path.exists(dataset_path):
             print("loading splits...")
-            train_examples = torch.load(dev_examples_path)
+            train_examples = torch.load(train_examples_path)
             dev_examples = torch.load(dev_examples_path)
+            test_examples = torch.load(test_examples_path)
 
             self.train = data.Dataset(examples=train_examples, fields=list_fields)
             self.dev = data.Dataset(examples=dev_examples, fields=list_fields)
+            self.test = data.Dataset(examples=test_examples, fields=list_fields)
         else:
             print("building splits...")
-            self.train, self.dev = data.TabularDataset.splits(
+            self.train, self.dev, self.test = data.TabularDataset.splits(
                 path=path,
                 train='{}l'.format(args.train_file),
                 validation='{}l'.format(args.dev_file),
+                test='{}l'.format(args.test_file),
                 format='json',
                 fields=dict_fields)
 
             os.makedirs(dataset_path)
             torch.save(self.train.examples, train_examples_path)
             torch.save(self.dev.examples, dev_examples_path)
+            torch.save(self.test.examples, test_examples_path)
 
         print("building vocab...")
-        self.CHAR.build_vocab(self.train, self.dev)
-        self.WORD.build_vocab(self.train, self.dev, vectors=GloVe(name='6B', dim=args.word_dim))
+        self.CHAR.build_vocab(self.train, self.dev, self.test)
+        self.WORD.build_vocab(self.train, self.dev, self.test, vectors=GloVe(name='6B', dim=args.word_dim))
 
         print("building iterators...")
         device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
-        self.train_iter, self.dev_iter = \
-            data.BucketIterator.splits((self.train, self.dev),
-                                       batch_sizes=[args.train_batch_size, args.dev_batch_size],
+        self.train_iter, self.dev_iter, self.test_iter = \
+            data.BucketIterator.splits((self.train, self.dev, self.test),
+                                       batch_sizes=[args.train_batch_size, args.dev_batch_size, args.test_batch_size],
                                        device=device,
                                        sort_key=lambda x: len(x.c_emb))
 

@@ -49,18 +49,22 @@ def train(args, data):
                 if param.requires_grad:
                     ema.update(name, param.data)
 
-            if (i + 1) % args.print_freq == 0:
-                dev_loss, accuracy = test(model, ema, args, data)
+            if i == 0 or i == num_iter // 2:
+                dev_loss, test_loss, dev_accuracy, test_accuracy = test(model, ema, args, data)
                 c = (i + 1) // args.print_freq
 
                 writer.add_scalar('loss/train', loss, c)
                 writer.add_scalar('loss/dev', dev_loss, c)
-                writer.add_scalar('accuracy/dev', accuracy, c)
-                print('epoch: {}/{}, iteration: {}/{} train loss: {} / dev loss: {} / dev accuracy: {}'
-                      .format(args.epoch, epoch, num_iter, i, rv(loss), rv(dev_loss), rv(accuracy)))
+                writer.add_scalar('accuracy/dev', dev_accuracy, c)
+                writer.add_scalar('loss/test', test_loss, c)
+                writer.add_scalar('accuracy/test', test_accuracy, c)
+                print('epoch: {}/{}, iteration: {}/{}, '
+                      'train/dev/test loss: {}/{}/{}, dev:test accuracy: {}/{}'
+                      .format(args.epoch, epoch, num_iter, i,
+                              rv(loss), rv(dev_loss), rv(test_loss), rv(dev_accuracy), rv(test_accuracy)))
 
-                if accuracy > max_dev_accuracy:
-                    max_dev_accuracy = accuracy
+                if dev_accuracy > max_dev_accuracy:
+                    max_dev_accuracy = dev_accuracy
                     best_model = copy.deepcopy(model)
                     torch.save(best_model.state_dict(), 'saved_models/BiDAF_{}.pt'.format(args.model_time))
                 model.train()
@@ -74,8 +78,6 @@ def train(args, data):
 def test(model, ema, args, data):
     device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
-    loss = 0
-    answers = dict()
     model.eval()
 
     backup_params = EMA(0)
@@ -84,8 +86,25 @@ def test(model, ema, args, data):
             backup_params.register(name, param.data)
             param.data.copy_(ema.get(name))
 
+    dev_iterator = data.dev_iter
+    test_iterator = data.test_iter
+    dev_loss, dev_answers = get_answers(backup_params, criterion, model, dev_iterator)
+    test_loss, test_answers = get_answers(backup_params, criterion, model, test_iterator)
+
+    with open(args.dev_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(dev_answers), file=f)
+    with open(args.test_prediction_file, 'w', encoding='utf-8') as f:
+        print(json.dumps(test_answers), file=f)
+
+    dev_accuracy, test_accuracy = evaluate.main(args)
+    return dev_loss, test_loss, dev_accuracy, test_accuracy
+
+
+def get_answers(backup_params, criterion, model, iterator):
+    answers = {}
+    loss = 0
     with torch.set_grad_enabled(False):
-        for batch in iter(data.dev_iter):
+        for batch in iter(iterator):
             b = model(batch)
             batch_loss = criterion(b, batch.answer)
             loss += batch_loss.item()
@@ -99,17 +118,12 @@ def test(model, ema, args, data):
         for name, param in model.named_parameters():
             if param.requires_grad:
                 param.data.copy_(backup_params.get(name))
-
-    with open(args.prediction_file, 'w', encoding='utf-8') as f:
-        print(json.dumps(answers), file=f)
-
-    accuracy = evaluate.main(args)
-    return loss, accuracy
+    return loss, answers
 
 
 # round value
 def rv(value):
-    return round(value, 2)
+    return f'{value:.2f}'
 
 
 def main():
@@ -119,7 +133,9 @@ def main():
     parser.add_argument('--char-channel-size', default=100, type=int)
     parser.add_argument('--context-threshold', default=400, type=int)
     parser.add_argument('--dev-batch-size', default=100, type=int)
+    parser.add_argument('--test-batch-size', default=100, type=int)
     parser.add_argument('--dev-file', default='nlvr_dev.json')
+    parser.add_argument('--test-file', default='nlvr_test.json')
     parser.add_argument('--dropout', default=0.2, type=float)
     parser.add_argument('--epoch', default=12, type=int)
     parser.add_argument('--exp-decay-rate', default=0.999, type=float)
@@ -127,18 +143,20 @@ def main():
     parser.add_argument('--hidden-size', default=100, type=int)
     parser.add_argument('--learning-rate', default=0.5, type=float)
     parser.add_argument('--print-freq', default=20, type=int)
-    parser.add_argument('--train-batch-size', default=60, type=int)
+    parser.add_argument('--train-batch-size', default=100, type=int)
     parser.add_argument('--train-file', default='nlvr_train.json')
     parser.add_argument('--word-dim', default=100, type=int)
-    parser.add_argument('--max_c_len', default=20, type=int)
+    parser.add_argument('--max_c_len', default=25, type=int)
     args = parser.parse_args()
 
     print('loading SQuAD data...')
     data = SQuAD(args)
     setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
     setattr(args, 'word_vocab_size', len(data.WORD.vocab))
-    setattr(args, 'dataset_file', '.data/squad/{}'.format(args.dev_file))
-    setattr(args, 'prediction_file', 'prediction{}.out'.format(args.gpu))
+    setattr(args, 'dev_dataset_file', '.data/squad/{}'.format(args.dev_file))
+    setattr(args, 'test_dataset_file', '.data/squad/{}'.format(args.test_file))
+    setattr(args, 'dev_prediction_file', 'dev_prediction{}.out'.format(args.gpu))
+    setattr(args, 'test_prediction_file', 'test_prediction{}.out'.format(args.gpu))
     setattr(args, 'model_time', strftime('%H:%M:%S', gmtime()))
     print('data loading complete!')
 
