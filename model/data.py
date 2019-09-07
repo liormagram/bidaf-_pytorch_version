@@ -96,12 +96,15 @@ class SQuAD():
                             s_idx = ans['answer_start']
                             e_idx = s_idx + len(str(answer))
 
-                            dump.append(dict([('id', id),
-                                              ('context', context),
-                                              ('question', question),
-                                              ('answer', answer),
-                                              ('s_idx', s_idx),
-                                              ('e_idx', e_idx)]))
+                            dictionary = dict([
+                                ('id', id),
+                                ('context', context),
+                                ('question', question),
+                                ('answer', answer),
+                                ('s_idx', s_idx),
+                                ('e_idx', e_idx)
+                            ])
+                            dump.append(dictionary)
 
         with open('{}l'.format(path), 'w', encoding='utf-8') as f:
             for line in dump:

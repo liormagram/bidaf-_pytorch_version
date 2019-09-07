@@ -30,14 +30,12 @@ def train(args, data):
     writer = SummaryWriter(log_dir='runs/' + args.model_time)
 
     model.train()
-    loss, last_epoch = 0, -1
     max_dev_accuracy = -1
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
-        print('epoch: {} / {}'.format(epoch + 1, args.epoch))
+        num_iter = len(iterator)
         for i, batch in enumerate(iterator):
-            # print('iteration: {}'.format(str(i)))
 
             b = model(batch)
 
@@ -58,7 +56,8 @@ def train(args, data):
                 writer.add_scalar('loss/train', loss, c)
                 writer.add_scalar('loss/dev', dev_loss, c)
                 writer.add_scalar('accuracy/dev', accuracy, c)
-                print('train loss: {} / dev loss: {}'.format(loss, dev_loss) + ' / dev accuracy: {}'.format(accuracy))
+                print('epoch: {}/{}, iteration: {}/{} train loss: {} / dev loss: {} / dev accuracy: {}'
+                      .format(args.epoch, epoch, num_iter, i, rv(loss), rv(dev_loss), rv(accuracy)))
 
                 if accuracy > max_dev_accuracy:
                     max_dev_accuracy = accuracy
@@ -106,6 +105,11 @@ def test(model, ema, args, data):
 
     accuracy = evaluate.main(args)
     return loss, accuracy
+
+
+# round value
+def rv(value):
+    return round(value, 2)
 
 
 def main():

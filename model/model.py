@@ -95,10 +95,11 @@ class BiDAF(nn.Module):
             max_batch = max(context_lens)
             # (batch, max_batch, 6)
             padded_embedding = [image + [[0, 0, 0, 0, 0, 0]] * (max_batch - len(image)) for image in list_embedding]
-            tensor_embedding = torch.tensor(padded_embedding).long()
+            tensor_lens = torch.Tensor(context_lens).to(torch.device('cuda:0'))
+            tensor_embedding = torch.Tensor(padded_embedding).to(torch.device('cuda:0'))
             expanded_embedding = self.embedding_expansion(tensor_embedding)
 
-            return expanded_embedding, torch.Tensor(context_lens).int()
+            return expanded_embedding, tensor_lens
 
         def highway_network(x1, x2):
             """
@@ -201,7 +202,8 @@ class BiDAF(nn.Module):
         # 4. Attention Flow Layer
         g = att_flow_layer(c, q)
         # 5. Modeling Layer
-        m = self.modeling_LSTM2((self.modeling_LSTM1((g, c_lens))[0], c_lens))[0]
+        lstm1 = self.modeling_LSTM1((g, c_lens))[0]
+        m = self.modeling_LSTM2((lstm1, c_lens))[0]
         # 6. Output Layer
         output = output_layer(g, m, c_lens)
 
