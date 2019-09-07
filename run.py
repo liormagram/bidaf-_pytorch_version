@@ -35,6 +35,7 @@ def train(args, data):
 
     iterator = data.train_iter
     for epoch in range(args.epoch):
+        num_iter = len(iterator)
         for i, batch in enumerate(iterator):
 
             b = model(batch)
@@ -49,7 +50,7 @@ def train(args, data):
                 if param.requires_grad:
                     ema.update(name, param.data)
 
-            if (i + 1) % (10 * args.print_freq) == 0 and epoch % 2 == 0:
+            if i == 0 or i == num_iter // 2:
                 dev_loss, test_loss, dev_accuracy, test_accuracy = test(model, ema, args, data)
                 c = (i + 1) // args.print_freq
 
