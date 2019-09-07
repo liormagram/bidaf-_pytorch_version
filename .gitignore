@@ -16,3 +16,5 @@ runs/
 saved_models/
 
 *.out
+
+\.data/
